@@ -34,8 +34,8 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    uint16_t recv_port = 0;
-    uint16_t send_port = 0;
+    unsigned short recv_port = 0;
+    unsigned short send_port = 0;
     if(!strcmp(argv[1], "--r"))
     {
         recv_port = atoi(argv[2]);
@@ -75,11 +75,19 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	// Set UDP IP Address and Port # 
+	// Set Server UDP IP Address and Port # 
 	struct sockaddr_in  recv_addr = {0};
 	recv_addr.sin_family  = AF_INET; // Use IPv4
 	recv_addr.sin_port	= htons(recv_port);   
 	recv_addr.sin_addr.s_addr = inet_addr(LOCAL_IP_STRING);
+
+	int ret = bind(udp_recv_socket_fd,(struct sockaddr*)&recv_addr,sizeof(recv_addr));
+	if(ret < 0)
+	{
+		perror("recv bind fail:");
+		close(udp_recv_socket_fd);
+		return -1;
+	}
 
     /** Create a send socket **/
     int udp_send_socket_fd = socket(AF_INET,SOCK_DGRAM,0);
@@ -89,7 +97,8 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	// Set UDP IP Address and Port # 
+
+	// Set Client UDP IP Address and Port # 
 	struct sockaddr_in  send_addr = {0};
 	send_addr.sin_family  = AF_INET; // Use IPv4
 	send_addr.sin_port	= htons(send_port);   
@@ -115,9 +124,10 @@ int main(int argc, char const *argv[])
 		{
 			break;
 		}
-        num_sent = sendto(udp_send_socket_fd, buffer, strlen((char *)buffer), 0, (struct sockaddr *)&send_addr,sizeof(send_addr)); 
 
 		printf("[%s:%d]",inet_ntoa(send_addr.sin_addr),ntohs(send_addr.sin_port));
+        num_sent = sendto(udp_send_socket_fd, buffer, strlen((char *)buffer), 0, (struct sockaddr *)&send_addr,sizeof(send_addr)); 
+
         printf("num_sent: %d\n", num_sent);
 
         // num_sent = sendto(udp_recv_socket_fd, buffer, strlen((char *)buffer), 0, (struct sockaddr *)&recv_addr,sizeof(recv_addr)); 
@@ -125,10 +135,11 @@ int main(int argc, char const *argv[])
 		// printf("[%s:%d]",inet_ntoa(recv_addr.sin_addr),ntohs(recv_addr.sin_port));
         // printf("num_sent: %d\n", num_sent);
 
-        num_recv = recvfrom(udp_send_socket_fd, (char *)buffer, MAX_BUFFER, 0, (struct sockaddr *)&src_addr, &len);
+        num_recv = recvfrom(udp_recv_socket_fd, (char *)buffer, MAX_BUFFER, 0, (struct sockaddr *)&src_addr, &len);
         buffer[num_recv] = '\0';
 
-        printf("From the server: %s\n", buffer);
+        printf("[%s:%d]",inet_ntoa(src_addr.sin_addr),ntohs(src_addr.sin_port));
+        printf("reply: %s\n", buffer);
         memset(buffer, 0, MAX_BUFFER);
 
         sleep(1);

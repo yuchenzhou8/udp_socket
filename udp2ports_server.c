@@ -34,8 +34,8 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    uint16_t recv_port = 0;
-    uint16_t send_port = 0;
+    unsigned short recv_port = 0;
+    unsigned short send_port = 0;
     if(!strcmp(argv[1], "--r"))
     {
         recv_port = atoi(argv[2]);
@@ -76,7 +76,7 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	// Set UDP IP Address and Port # 
+	// Set Server UDP IP Address and Port # 
 	struct sockaddr_in  recv_addr = {0};
 	recv_addr.sin_family  = AF_INET; // Use IPv4
 	recv_addr.sin_port	= htons(recv_port);   
@@ -99,19 +99,12 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	// Set UDP IP Address and Port # 
+	// Set Client UDP IP Address and Port # 
 	struct sockaddr_in  send_addr = {0};
 	send_addr.sin_family  = AF_INET; // Use IPv4
 	send_addr.sin_port	= htons(send_port);   
 	send_addr.sin_addr.s_addr = inet_addr(LOCAL_IP_STRING);
     
-	ret = bind(udp_send_socket_fd,(struct sockaddr*)&send_addr,sizeof(send_addr));
-	if(ret < 0)
-	{
-		perror("send bind fail:");
-		close(udp_send_socket_fd);
-		return -1;
-	}
 
     // Set UDP IP Address and Port # for src address
 	struct sockaddr_in  src_addr = {0};
@@ -132,17 +125,18 @@ int main(int argc, char const *argv[])
 
 
 		printf("[%s:%d]",inet_ntoa(src_addr.sin_addr),ntohs(src_addr.sin_port));
-        printf("From the client: %s\n", buffer);
+        printf("msg: %s\n", buffer);
 
+        memset(buffer, 0, MAX_BUFFER);
 
-        // num_recv = recvfrom(udp_send_socket_fd, (char *)buffer, MAX_BUFFER, 0, (struct sockaddr *)&src_addr, &len);
-        // buffer[num_recv] = '\0';
-
-
-		// printf("[%s:%d]",inet_ntoa(src_addr.sin_addr),ntohs(src_addr.sin_port));
-        // printf("From the client: %s\n", buffer);
-
-        num_sent = sendto(udp_recv_socket_fd, (char *)buffer, strlen((char *)buffer), 0, (struct sockaddr *)&recv_addr,sizeof(recv_addr)); 		
+		printf("Please input reply msg:");
+        scanf("%s", (char *)buffer); /* get a msg from STDIN */
+        if(strcmp((char *)buffer, "exit") == 0)
+		{
+			break;
+		}    
+		printf("[%s:%d]",inet_ntoa(send_addr.sin_addr),ntohs(send_addr.sin_port));
+        num_sent = sendto(udp_send_socket_fd, (char *)buffer, strlen((char *)buffer), 0, (struct sockaddr *)&send_addr, sizeof(send_addr)); 		
 
         printf("num_sent: %d\n", num_sent);
         memset(buffer, 0, MAX_BUFFER);
